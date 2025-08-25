@@ -1,0 +1,8 @@
+{
+    "name": "arqbits/arqbits",
+    "description": "Site da Arqbits.",
+    "type": "project",
+    "require": {
+        "php": "^8.2"
+    }
+}

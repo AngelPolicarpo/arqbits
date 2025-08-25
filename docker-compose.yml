@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: arqbits
+    restart: unless-stopped
+    develop:
+      watch:
+        - path: ./composer.json
+          action: rebuild
+        - path: ./composer.lock
+          action: rebuild
+        - path: ./Dockerfile
+          action: rebuild
+
+        - path: ./
+          target: /var/www/html
+          action: sync
+          ignore:
+            - vendor/
+    ports:
+      - "8000:8000" # Mapeia a porta 8000 do seu PC para a porta 8000 do contêiner
+    volumes:
+      - ./:/var/www/html
+    command: php -S 0.0.0.0:8000 -t /var/www/html
