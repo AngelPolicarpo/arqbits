@@ -6,6 +6,8 @@ require_once 'contact_handler.php';
 $site_title = "Arqbits";
 $site_description = "Somos uma empresa focada em soluções arquivísticas e tecnológicas com ênfase em dados.";
 $contact_email = "contato@arqbits.com.br";
+$site_image = "imagem.png";
+
 
 // Dados dos serviços
 $services = [
@@ -68,6 +70,8 @@ function get_icon($type) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo htmlspecialchars($site_title); ?></title>
+    <link rel="shortcut icon" href="favicon.ico" type="image/x-icon"/>
+    <meta property="og:image" content="<?php echo $site_image; ?>">
     <meta name="description" content="<?php echo htmlspecialchars($site_description); ?>">
     
     <!-- CSS baseado no Tailwind fornecido -->
@@ -76,18 +80,29 @@ function get_icon($type) {
         
         /* Estilos adicionais específicos */
         .hero-section {
+            position: relative;
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 1.5rem;
-            background-image: linear-gradient(
-            var(--background-img),
-            var(--background-img)
-        ), url('hero-bg.png');
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
+            background: radial-gradient(circle, var(--hero-section-2) 100%, var(--hero-section-1) 100%);
+            overflow: hidden;
+        }
+        
+        .hero-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+        
+        .hero-content {
+            position: relative;
+            z-index: 1;
+            text-align: center;
         }
         
         .section-padding {
@@ -323,7 +338,10 @@ function get_icon($type) {
 <body class="smooth-scroll">
     <!-- Hero Section -->
     <section class="hero-section">
-        <div class="max-w-4xl mx-auto text-center space-y-8">
+        <!-- Canvas para background animado -->
+        <canvas id="networkCanvas" class="hero-canvas"></canvas>
+        
+        <div class="hero-content max-w-4xl mx-auto space-y-8">
             <h1 class="text-4xl md:text-6xl font-bold">
                 Seus Documentos Possuem uma História para Contar
             </h1>
@@ -494,10 +512,114 @@ function get_icon($type) {
         </div>
     </section>
 
- <!-- Incluir JavaScript -->
+    <!-- Incluir JavaScript -->
     <script src="script.js"></script>
     
     <script>
+        // Background animado
+        const canvas = document.getElementById('networkCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Função para redimensionar o canvas
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+
+        resizeCanvas();
+
+        let points = [];
+
+        // Função para calcular número de pontos baseado no tamanho da tela
+        function calculatePointsCount() {
+            const screenArea = window.innerWidth * window.innerHeight;
+            const baseArea = 1920 * 1080; // Tela de referência (Full HD)
+            const basePoints = 50;
+            
+            // Calcula pontos proporcionalmente à área da tela
+            let calculatedPoints = Math.round((screenArea / baseArea) * basePoints);
+            
+            // Define limites mínimo e máximo
+            const minPoints = 10; // Mínimo para mobile
+            const maxPoints = 100; // Máximo para telas muito grandes
+            
+            return Math.max(minPoints, Math.min(maxPoints, calculatedPoints));
+        }
+
+        // Função para criar pontos
+        function createPoints() {
+            const numPoints = calculatePointsCount();
+            points = []; // Limpa pontos existentes
+            
+            for (let i = 0; i < numPoints; i++) {
+                points.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    vx: (Math.random() - 0.3) * 0.3, // velocidade X
+                    vy: (Math.random() - 0.3) * 0.3, // velocidade Y
+                    radius: 2 + Math.random() * 2
+                });
+            }
+        }
+
+        // Criar pontos iniciais
+        createPoints();
+
+        // Função de desenho
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const rootStyles = getComputedStyle(document.documentElement);
+            const backgroundColor = rootStyles.getPropertyValue("--point-1").trim();
+            const foregroundColor = rootStyles.getPropertyValue("--point-2").trim();
+
+            const numPoints = points.length;
+
+            // Desenha as linhas
+            for (let i = 0; i < numPoints; i++) {
+                for (let j = i + 1; j < numPoints; j++) {
+                    const dx = points[i].x - points[j].x;
+                    const dy = points[i].y - points[j].y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist < 150) {
+                        ctx.beginPath();
+                        ctx.strokeStyle = backgroundColor;
+                        ctx.lineWidth = 0.5;
+                        ctx.moveTo(points[i].x, points[i].y);
+                        ctx.lineTo(points[j].x, points[j].y);
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            // Desenha os pontos
+            for (let i = 0; i < numPoints; i++) {
+                const p = points[i];
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctx.fillStyle = foregroundColor;
+                ctx.fill();
+
+                // Movimenta
+                p.x += p.vx;
+                p.y += p.vy;
+
+                // Rebater nas bordas
+                if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
+                if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+            }
+
+            requestAnimationFrame(draw);
+        }
+
+        draw();
+
+        // Ajusta quando redimensionar tela
+        window.addEventListener('resize', () => {
+            resizeCanvas();
+            createPoints(); // Recria pontos com nova quantidade baseada no tamanho da tela
+        });
+
         // Smooth scrolling para links âncora (fallback se script.js não carregar)
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             anchor.addEventListener('click', function (e) {
